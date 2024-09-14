@@ -11,15 +11,17 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building the JAR file...
-      - mvn clean install
+      - mvn clean install || { echo "Maven build failed"; exit 1; }
+      - echo Maven build completed. Checking target folder for JAR...
+      - ls -al target/  # List files in target directory to confirm JAR file
       - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:latest .
+      - docker build -t $REPOSITORY_URI:latest . || { echo "Docker build failed"; exit 1; }
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing Docker images to ECR...
-      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:latest || { echo "Docker push failed"; exit 1; }
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
       - DOCKER_CONTAINER_NAME=aapooncontactssecuredrepo-qa
@@ -31,3 +33,4 @@ artifacts:
   files:
     - imagedefinitions.json
     - target/springboot-aws-deploy.jar
+  discard-paths: yes
